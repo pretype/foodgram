@@ -4,12 +4,11 @@ import base64
 
 from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework import serializers
-
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 from recipes.validators import (amounts_validation, cooking_time_validation,
                                 ingredients_or_tags_validation)
+from rest_framework import serializers
 from users.constants import (DEFAULT_RECIPES_LIMIT_PARAM,
                              DEFAULT_RECIPES_LIMIT_VALUE,
                              DEFAULT_REQUIRED_FIELDS, DEFAULT_USERNAME_FIELD)

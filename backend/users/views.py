@@ -1,16 +1,16 @@
 # -*- coding: UTF-8 -*-
 """Модуль с представлениями приложения пользователи проекта Foodgram."""
 
+from api.serializers import (SubscriptionsSerializer, UserCreateSerializer,
+                             UserSerializer)
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from djoser.serializers import SetPasswordSerializer
+from recipes.pagination import StandardResultsSetPagination
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from api.serializers import (SubscriptionsSerializer, UserCreateSerializer,
-                             UserSerializer)
-from recipes.pagination import StandardResultsSetPagination
 from .constants import DEFAULT_RECIPES_LIMIT_PARAM, DEFAULT_RECIPES_LIMIT_VALUE
 from .models import Subscription
 

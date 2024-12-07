@@ -3,6 +3,9 @@
 
 import io
 
+from api.serializers import (FavoriteSerializer, IngredientSerializer,
+                             RecipeAddSerializer, RecipeSerializer,
+                             ShoppingCartSerializer, TagSerializer)
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import FileResponse
@@ -12,11 +15,8 @@ from reportlab.pdfgen import canvas
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
-from api.serializers import (FavoriteSerializer, IngredientSerializer,
-                             RecipeAddSerializer, RecipeSerializer,
-                             ShoppingCartSerializer, TagSerializer)
 from users.permissions import IsAdminOrAuthorOrReadOnly, IsAdminOrReadOnly
+
 from .constants import (FIRST_IN_LIST, FONT_SIZE, ITEMS_PER_PAGE,
                         MAX_PAGES_COUNT, SECOND_IN_LIST, THIRD_IN_LIST, X_AXIS,
                         Y_AXIS, Y_AXIS_SHIFT)
