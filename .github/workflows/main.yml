@@ -19,7 +19,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "docker-compose.production.yml"
-          target: "foodgram"
+          target: "home/foodgram"
 
   send_message:
     runs-on: ubunty-latest
