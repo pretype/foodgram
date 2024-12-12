@@ -18,6 +18,7 @@ services:
     image: user8008/foodgram_back_image
     env_file: .env
     volumes:
+      - ./data/:/usr/share/data/
       - static:/backend_static
       - media:/app/media/
     depends_on:

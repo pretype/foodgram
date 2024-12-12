@@ -1,19 +1,19 @@
 """Модуль с маршрутизацией приложения API проекта Foodgram."""
 
 from django.urls import include, path
-from recipes.views import IngredientViewSet, RecipeViewSet, TagViewSet
 from rest_framework.routers import DefaultRouter
-from users.views import UserViewSet
+
+from .views import IngredientViewSet, RecipeViewSet, TagViewSet, UserViewSet
 
 app_name = 'api'
 
-router_v1 = DefaultRouter()
-router_v1.register(r'users', UserViewSet)
-router_v1.register(r'recipes', RecipeViewSet)
-router_v1.register(r'tags', TagViewSet)
-router_v1.register(r'ingredients', IngredientViewSet)
+router = DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'recipes', RecipeViewSet)
+router.register(r'tags', TagViewSet)
+router.register(r'ingredients', IngredientViewSet)
 
 urlpatterns = [
-    path('', include(router_v1.urls)),
+    path('', include(router.urls)),
     path('auth/', include('djoser.urls.authtoken'))
 ]

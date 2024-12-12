@@ -1,15 +1,15 @@
-"""Модуль с фильтрами приложения рецептов проекта Foodgram."""
+"""Модуль с фильтрами приложения API проекта Foodgram."""
 
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import FilterSet, filters
 
-from .models import Ingredient, Recipe, Tag
+from recipes.models import Ingredient, Recipe, Tag
 
 User = get_user_model()
 
 
 class IngredientFilter(FilterSet):
-    """Поиск по названию для ингредиентов."""
+    """Поиск по названию для продуктов."""
 
     name = filters.CharFilter(lookup_expr='startswith')
 
@@ -40,16 +40,16 @@ class RecipeFilter(FilterSet):
         model = Recipe
         fields = ('tags', 'author')
 
-    def is_favorited_custom_filter(self, queryset, name, value):
+    def is_favorited_custom_filter(self, recipes, name, value):
         """Фильтрует по избранности рецепта."""
         user = self.request.user
         if user.is_authenticated and value:
-            return queryset.filter(favorites__user=user)
-        return queryset
+            return recipes.filter(favorites__user=user)
+        return recipes
 
-    def is_in_shopping_cart_custom_filter(self, queryset, name, value):
+    def is_in_shopping_cart_custom_filter(self, recipes, name, value):
         """Фильтрует по включению рецепта в список покупок."""
         user = self.request.user
         if user.is_authenticated and value:
-            return queryset.filter(shopping_cart__user=user)
-        return queryset
+            return recipes.filter(shoppingcarts__user=user)
+        return recipes

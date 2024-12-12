@@ -2,7 +2,7 @@
 
 from rest_framework.pagination import PageNumberPagination
 
-from .constants import DEFAULT_PAGE_LIMIT_PARAM, DEFAULT_PAGE_SIZE
+from recipes.constants import DEFAULT_PAGE_LIMIT_PARAM, DEFAULT_PAGE_SIZE
 
 
 class StandardResultsSetPagination(PageNumberPagination):

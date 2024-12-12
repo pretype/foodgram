@@ -1,11 +1,20 @@
 """Модуль с константами приложения рецептов в проекте Foodgram."""
 
-# Общие константы.
-FIRST_IN_LIST = 0
-SECOND_IN_LIST = 1
-THIRD_IN_LIST = 2
-EMPTY_VALUE_DISPLAY = 'Нет данных'
 
+# Общие константы.
+EMPTY_VALUE_DISPLAY = 'нет данных'
+
+# Константы пользователей.
+# Константы пользователя.
+DEFAULT_USERNAME_FIELD = 'email'
+DEFAULT_REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+USERNAME_REG_EX = r'^[\w.@+-]+\Z'
+
+# Константы пагинации.
+DEFAULT_RECIPES_LIMIT_PARAM = 'recipes_limit'
+DEFAULT_RECIPES_LIMIT_VALUE = 999
+
+# Константы рецептов.
 # Константы валидации.
 MIN_COOKING_TIME = 1
 MIN_AMOUNT = 1
@@ -13,11 +22,3 @@ MIN_AMOUNT = 1
 # Константы пагинации.
 DEFAULT_PAGE_SIZE = 6
 DEFAULT_PAGE_LIMIT_PARAM = 'limit'
-
-# Константы загрузки списка покупок.
-MAX_PAGES_COUNT = 100
-X_AXIS = 35
-Y_AXIS = 50
-Y_AXIS_SHIFT = 35
-FONT_SIZE = 14
-ITEMS_PER_PAGE = 20

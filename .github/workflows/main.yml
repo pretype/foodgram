@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8==7.1.1 flake8-isort==6.1.1
+          pip install flake8==7.1.1
 
       - name: Test with flake8
         run: |
@@ -94,6 +94,8 @@ jobs:
             sudo docker compose -f docker-compose.production.yml up -d
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py makemigrations
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata /usr/share/data/ingredients_initial_data.json
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py loaddata /usr/share/data/tags_initial_data.json
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input 
             sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static
 
