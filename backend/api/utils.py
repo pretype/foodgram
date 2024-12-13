@@ -6,27 +6,27 @@ from datetime import datetime
 def shopping_cart_content(ingredients_and_amounts, recipes, user):
     """Формирование содержания файла со списком покупок."""
     current_date = datetime.now().strftime('%d.%m.%y')
-    number_of_item = 0
-    ingredients_and_amounts_list = []
-
-    for ingredient_and_amount in ingredients_and_amounts:
-        number_of_item += 1
-        ingredients_and_amounts_list.append(
-            f'{number_of_item}. '
-            f'{ingredient_and_amount[0].capitalize()} '
-            f'({ingredient_and_amount[1]}) — '
-            f'{ingredient_and_amount[2]}'
+    ingredients_and_amounts_list = [
+        '{}. {} ({}) — {}'.format(
+            number_of_item,
+            ingredient,
+            measurement_unit,
+            amount,
         )
+        for number_of_item, (
+            ingredient, measurement_unit, amount
+        ) in enumerate(ingredients_and_amounts, start=1)
+    ]
 
-    number_of_item = 0
-    recipes_list = []
-
-    for recipe in recipes:
-        number_of_item += 1
-        recipes_list.append(
-            f'{number_of_item}. '
-            f'{recipe[0]}.'
+    recipes_list = [
+        '{}. {}'.format(
+            number_of_item,
+            recipe
         )
+        for number_of_item, recipe in enumerate(
+            recipes, start=1
+        )
+    ]
 
     return '\n'.join(
         [

@@ -234,5 +234,5 @@ DB_PORT
 ***
 
 ## Автор
-### Шарафетдинов Д. Р. ([pretype](https://github.com/pretype))
+### Шарафетдинов Дамир ([pretype](https://github.com/pretype))
 

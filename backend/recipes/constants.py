@@ -22,3 +22,6 @@ MIN_AMOUNT = 1
 # Константы пагинации.
 DEFAULT_PAGE_SIZE = 6
 DEFAULT_PAGE_LIMIT_PARAM = 'limit'
+
+# Константы хранилищ данных.
+DATA_STORAGE_PATH = '/usr/share/data/'

@@ -4,8 +4,10 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
-from .constants import (DEFAULT_REQUIRED_FIELDS, DEFAULT_USERNAME_FIELD,
-                        MIN_AMOUNT, MIN_COOKING_TIME, USERNAME_REG_EX)
+from .constants import (
+    DEFAULT_REQUIRED_FIELDS, DEFAULT_USERNAME_FIELD,
+    MIN_AMOUNT, MIN_COOKING_TIME, USERNAME_REG_EX
+)
 
 
 class User(AbstractUser):
@@ -19,11 +21,10 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        verbose_name='Пользователь',
+        verbose_name='Имя пользователя',
         validators=(
             RegexValidator(
                 regex=USERNAME_REG_EX,
-                message='Недопустимые символы!'
             ),
         )
     )
@@ -60,13 +61,13 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='followers',
+        related_name='authors',
         verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='authors',
+        related_name='followers',
         verbose_name='Автор'
     )
 
@@ -96,7 +97,7 @@ class Tag(models.Model):
     slug = models.SlugField(
         max_length=32,
         unique=True,
-        verbose_name='Слаг тега'
+        verbose_name='Слаг'
     )
 
     class Meta:
@@ -141,7 +142,6 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='recipes',
         verbose_name='Автор рецепта'
     )
     name = models.CharField(
@@ -157,13 +157,11 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Текст')
     ingredients = models.ManyToManyField(
         Ingredient,
-        related_name='recipes',
         through='IngredientRecipe',
         verbose_name='Продукты'
     )
     tags = models.ManyToManyField(
         Tag,
-        related_name='recipes',
         verbose_name='Теги'
     )
     cooking_time = models.PositiveIntegerField(
@@ -180,6 +178,7 @@ class Recipe(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+        default_related_name = 'recipes'
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -193,13 +192,11 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='recipes_with_ingredient',
         verbose_name='Продукт'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='ingredients_in_recipe',
         verbose_name='Рецепт'
     )
     amount = models.IntegerField(
@@ -211,8 +208,9 @@ class IngredientRecipe(models.Model):
 
     class Meta:
         ordering = ('recipe',)
-        verbose_name = 'Продукт-рецепт'
-        verbose_name_plural = 'Продукт-рецепты'
+        default_related_name = 'recipe_ingredients'
+        verbose_name = 'Продукт в рецепте'
+        verbose_name_plural = 'Продукты в рецепте'
         constraints = (
             models.UniqueConstraint(
                 fields=('ingredient', 'recipe'),
@@ -230,20 +228,19 @@ class UserRecipeAbstractModel(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='%(class)ss',
         verbose_name='Пользователь'
     )
 
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='%(class)ss',
         verbose_name='Рецепт'
     )
 
     class Meta:
         abstract = True
         ordering = ('user',)
+        default_related_name = '%(class)ss'
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),

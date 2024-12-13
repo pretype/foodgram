@@ -1,15 +1,21 @@
 """Модуль с сериализаторами проекта Foodgram."""
 
+
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from api.validators import ingredients_or_tags_validation
-from recipes.constants import (DEFAULT_RECIPES_LIMIT_PARAM,
-                               DEFAULT_RECIPES_LIMIT_VALUE, MIN_AMOUNT,
-                               MIN_COOKING_TIME)
-from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                            ShoppingCart, Subscription, Tag, User)
+from recipes.constants import (
+    DEFAULT_RECIPES_LIMIT_PARAM,
+    DEFAULT_RECIPES_LIMIT_VALUE, MIN_AMOUNT,
+    MIN_COOKING_TIME
+)
+from recipes.models import (
+    Favorite, Ingredient,
+    IngredientRecipe, Recipe,
+    ShoppingCart, Subscription, Tag, User
+)
 
 
 class UserSerializer(DjoserUserSerializer):
@@ -31,7 +37,7 @@ class UserSerializer(DjoserUserSerializer):
     def get_is_subscribed(self, author):
         """Проверяет подписку на пользователя."""
         current_user = self.context['request'].user
-        return bool(
+        return (
             current_user.is_authenticated
             and Subscription.objects.filter(
                 user=current_user,
@@ -64,14 +70,15 @@ class SubscriptionsSerializer(UserSerializer):
 
     def get_recipes(self, author):
         """Отдаёт список рецептов с возможностью лимитирования."""
-        limit = int(
-            self.context['request'].GET.get(
-                DEFAULT_RECIPES_LIMIT_PARAM,
-                DEFAULT_RECIPES_LIMIT_VALUE
-            )
-        )
         return RecipePresentitiveSerializer(
-            author.recipes.all()[:limit],
+            author.recipes.all()[
+                :int(
+                    self.context['request'].GET.get(
+                        DEFAULT_RECIPES_LIMIT_PARAM,
+                        DEFAULT_RECIPES_LIMIT_VALUE
+                    )
+                )
+            ],
             many=True
         ).data
 
@@ -122,7 +129,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientRecipeSerializer(
         read_only=True,
         many=True,
-        source='ingredients_in_recipe'
+        source='recipe_ingredients'
     )
     image = Base64ImageField()
     is_favorited = serializers.SerializerMethodField()
@@ -143,27 +150,24 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_in_shopping_cart'
         )
 
-    def get_is_favorited(self, recipe):
-        """Проверяет избранность рецепта."""
+    def is_recipe_in(self, recipe, model):
+        """Проверяет, есть ли рецепт в перечне."""
         user = self.context['request'].user
         return (
             user.is_authenticated
-            and Favorite.objects.filter(
+            and model.objects.filter(
                 user=user,
                 recipe=recipe
             ).exists()
         )
 
+    def get_is_favorited(self, recipe):
+        """Проверяет избранность рецепта."""
+        return self.is_recipe_in(recipe, Favorite)
+
     def get_is_in_shopping_cart(self, recipe):
         """Проверяет включение рецепта в список покупок."""
-        user = self.context['request'].user
-        return (
-            user.is_authenticated
-            and ShoppingCart.objects.filter(
-                user=user,
-                recipe=recipe
-            ).exists()
-        )
+        return self.is_recipe_in(recipe, ShoppingCart)
 
 
 class IngredientAddRecipeSerializer(serializers.ModelSerializer):
@@ -211,30 +215,30 @@ class RecipeModificateSerializer(serializers.ModelSerializer):
 
     def add_ingredients(self, ingredients, recipe):
         """Отдаёт или добавляет продукты в базу."""
-        for _ingredient in ingredients:
-            IngredientRecipe.objects.get_or_create(
-                recipe=recipe,
-                ingredient=_ingredient['id'],
-                amount=_ingredient['amount']
-            )
-
-    def validate_tags(self, tags):
-        """Валидация тегов рецепта."""
-        ingredients_or_tags_validation(tags)
-        return tags
-
-    def validate_ingredients(self, ingredients):
-        """Валидация продуктов рецепта."""
-        _ingredients = [ing['id'] for ing in ingredients]
-        ingredients_or_tags_validation(_ingredients)
-        return ingredients
+        IngredientRecipe.objects.bulk_create(
+            [
+                IngredientRecipe(
+                    recipe=recipe,
+                    ingredient=_ingredient['id'],
+                    amount=_ingredient['amount']
+                ) for _ingredient in ingredients
+            ]
+        )
 
     def validate(self, data):
-        """Валидация изображения."""
+        """Валидация данных."""
         if not data.get('image'):
             raise serializers.ValidationError(
                 'Не выбрано изображение рецепта!'
             )
+        ingredients_or_tags_validation(
+            data.get('tags'),
+            'tags'
+        )
+        ingredients_or_tags_validation(
+            data.get('ingredients'),
+            'ingredients'
+        )
         return data
 
     def to_representation(self, instance):
@@ -258,11 +262,6 @@ class RecipeModificateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Модификация рецепта."""
-        if not (validated_data.get('ingredients')
-                and validated_data.get('tags')):
-            raise serializers.ValidationError(
-                'Пропущено обязательное поле продуктов или тегов!'
-            )
         ingredients = validated_data.pop('ingredients')
         IngredientRecipe.objects.filter(recipe=instance).delete()
         self.add_ingredients(
@@ -277,8 +276,6 @@ class RecipeModificateSerializer(serializers.ModelSerializer):
 class RecipePresentitiveSerializer(serializers.ModelSerializer):
     """Сериализатор основных данных рецепта."""
 
-    image = Base64ImageField()
-
     class Meta:
         model = Recipe
         fields = (
@@ -286,4 +283,7 @@ class RecipePresentitiveSerializer(serializers.ModelSerializer):
             'name',
             'image',
             'cooking_time'
+        )
+        read_only_fields = (
+            *fields,
         )
