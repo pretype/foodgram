@@ -21,7 +21,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        verbose_name='Имя пользователя',
+        verbose_name='Ник',
         validators=(
             RegexValidator(
                 regex=USERNAME_REG_EX,
@@ -61,13 +61,13 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='authors',
+        related_name='followers',
         verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='followers',
+        related_name='authors',
         verbose_name='Автор'
     )
 
@@ -157,7 +157,7 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Текст')
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientRecipe',
+        through='RecipeIngredient',
         verbose_name='Продукты'
     )
     tags = models.ManyToManyField(
@@ -186,7 +186,7 @@ class Recipe(models.Model):
         return self.name
 
 
-class IngredientRecipe(models.Model):
+class RecipeIngredient(models.Model):
     """Модель продукт-рецепта."""
 
     ingredient = models.ForeignKey(

@@ -9,7 +9,7 @@ def shopping_cart_content(ingredients_and_amounts, recipes, user):
     ingredients_and_amounts_list = [
         '{}. {} ({}) — {}'.format(
             number_of_item,
-            ingredient,
+            ingredient.capitalize(),
             measurement_unit,
             amount,
         )

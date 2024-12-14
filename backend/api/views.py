@@ -9,11 +9,12 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
 
 from recipes.models import (
     Favorite, Ingredient,
-    IngredientRecipe, Recipe,
+    Recipe, RecipeIngredient,
     ShoppingCart, Subscription, Tag
 )
 from .filters import IngredientFilter, RecipeFilter
@@ -21,7 +22,7 @@ from .pagination import StandardResultsSetPagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     IngredientSerializer, RecipeModificateSerializer,
-    RecipePresentitiveSerializer, RecipeSerializer,
+    RecipeSerializer, RecipeShortSerializer,
     SubscriptionsSerializer, TagSerializer,
     UserSerializer
 )
@@ -91,16 +92,17 @@ class UserViewSet(DjoserUserViewSet):
     )
     def subscriptions(self, request, *args, **kwargs):
         """Отдает подписки пользователя."""
-        subscriptions = User.objects.filter(
-            followers__user=self.request.user
+        return self.get_paginated_response(
+            SubscriptionsSerializer(
+                self.paginate_queryset(
+                    User.objects.filter(
+                        authors__user=self.request.user
+                    )
+                ),
+                many=True,
+                context={'request': request}
+            ).data
         )
-        page = self.paginate_queryset(subscriptions)
-        serializer = SubscriptionsSerializer(
-            page,
-            many=True,
-            context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
 
     @action(
         detail=True,
@@ -195,7 +197,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'Рецепт уже добавлен!'
             )
         return Response(
-            RecipePresentitiveSerializer(
+            RecipeShortSerializer(
                 recipe,
                 context={'request': self.request}
             ).data,
@@ -230,11 +232,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Отдаёт короткую ссылку на текущий рецепт."""
         recipe_id = kwargs['recipe_id']
         if not Recipe.objects.filter(id=recipe_id).exists():
-            raise ValidationError('Такого рецепта нет!')
+            raise ValidationError(
+                f'Рецепта с id "{recipe_id}" не существует!'
+            )
         return Response(
             {
                 'short-link': request.build_absolute_uri(
-                    f'/s/{recipe_id}/'
+                    reverse(
+                        'recipes:recipe_short_link',
+                        args=(recipe_id,)
+                    )
                 )
             },
             status=status.HTTP_200_OK
@@ -253,7 +260,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'Список покупок пуст!'
             )
         ingredients_and_amounts = (
-            IngredientRecipe.objects.filter(
+            RecipeIngredient.objects.filter(
                 recipe__shoppingcarts__user=user
             ).values(
                 'ingredient'

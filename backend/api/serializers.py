@@ -7,14 +7,17 @@ from rest_framework import serializers
 
 from api.validators import ingredients_or_tags_validation
 from recipes.constants import (
-    DEFAULT_RECIPES_LIMIT_PARAM,
-    DEFAULT_RECIPES_LIMIT_VALUE, MIN_AMOUNT,
+    MIN_AMOUNT,
     MIN_COOKING_TIME
 )
 from recipes.models import (
     Favorite, Ingredient,
-    IngredientRecipe, Recipe,
+    Recipe, RecipeIngredient,
     ShoppingCart, Subscription, Tag, User
+)
+from .constants import (
+    DEFAULT_RECIPES_LIMIT_PARAM,
+    DEFAULT_RECIPES_LIMIT_VALUE
 )
 
 
@@ -54,35 +57,6 @@ class UserSerializer(DjoserUserSerializer):
         return data
 
 
-class SubscriptionsSerializer(UserSerializer):
-    """Сериализатор подписок."""
-
-    recipes_count = serializers.ReadOnlyField(source='recipes.count')
-    recipes = serializers.SerializerMethodField()
-
-    class Meta(UserSerializer.Meta):
-        model = User
-        fields = (
-            *UserSerializer.Meta.fields,
-            'recipes',
-            'recipes_count'
-        )
-
-    def get_recipes(self, author):
-        """Отдаёт список рецептов с возможностью лимитирования."""
-        return RecipePresentitiveSerializer(
-            author.recipes.all()[
-                :int(
-                    self.context['request'].GET.get(
-                        DEFAULT_RECIPES_LIMIT_PARAM,
-                        DEFAULT_RECIPES_LIMIT_VALUE
-                    )
-                )
-            ],
-            many=True
-        ).data
-
-
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор тегов."""
 
@@ -99,7 +73,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class IngredientRecipeSerializer(serializers.ModelSerializer):
+class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор модели продукт-рецепт."""
 
     id = serializers.ReadOnlyField(source='ingredient.id')
@@ -109,7 +83,7 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = IngredientRecipe
+        model = RecipeIngredient
         fields = (
             'id',
             'name',
@@ -126,7 +100,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         read_only=True,
         many=True
     )
-    ingredients = IngredientRecipeSerializer(
+    ingredients = RecipeIngredientSerializer(
         read_only=True,
         many=True,
         source='recipe_ingredients'
@@ -179,7 +153,7 @@ class IngredientAddRecipeSerializer(serializers.ModelSerializer):
     amount = serializers.IntegerField(min_value=MIN_AMOUNT)
 
     class Meta:
-        model = IngredientRecipe
+        model = RecipeIngredient
         fields = (
             'id',
             'amount'
@@ -214,15 +188,13 @@ class RecipeModificateSerializer(serializers.ModelSerializer):
         )
 
     def add_ingredients(self, ingredients, recipe):
-        """Отдаёт или добавляет продукты в базу."""
-        IngredientRecipe.objects.bulk_create(
-            [
-                IngredientRecipe(
-                    recipe=recipe,
-                    ingredient=_ingredient['id'],
-                    amount=_ingredient['amount']
-                ) for _ingredient in ingredients
-            ]
+        """Отдаёт или добавляет продукты в рецепте в базу."""
+        RecipeIngredient.objects.bulk_create(
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient=_ingredient['id'],
+                amount=_ingredient['amount']
+            ) for _ingredient in ingredients
         )
 
     def validate(self, data):
@@ -263,7 +235,7 @@ class RecipeModificateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Модификация рецепта."""
         ingredients = validated_data.pop('ingredients')
-        IngredientRecipe.objects.filter(recipe=instance).delete()
+        RecipeIngredient.objects.filter(recipe=instance).delete()
         self.add_ingredients(
             ingredients,
             instance
@@ -273,7 +245,7 @@ class RecipeModificateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class RecipePresentitiveSerializer(serializers.ModelSerializer):
+class RecipeShortSerializer(serializers.ModelSerializer):
     """Сериализатор основных данных рецепта."""
 
     class Meta:
@@ -284,6 +256,33 @@ class RecipePresentitiveSerializer(serializers.ModelSerializer):
             'image',
             'cooking_time'
         )
-        read_only_fields = (
-            *fields,
+        read_only_fields = fields
+
+
+class SubscriptionsSerializer(UserSerializer):
+    """Сериализатор подписок."""
+
+    recipes_count = serializers.ReadOnlyField(source='recipes.count')
+    recipes = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = (
+            *UserSerializer.Meta.fields,
+            'recipes',
+            'recipes_count'
         )
+
+    def get_recipes(self, author):
+        """Отдаёт список рецептов с возможностью лимитирования."""
+        return RecipeShortSerializer(
+            author.recipes.all()[
+                :int(
+                    self.context['request'].GET.get(
+                        DEFAULT_RECIPES_LIMIT_PARAM,
+                        DEFAULT_RECIPES_LIMIT_VALUE
+                    )
+                )
+            ],
+            many=True
+        ).data

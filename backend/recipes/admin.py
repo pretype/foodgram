@@ -8,8 +8,8 @@ from django.utils.safestring import mark_safe
 
 from .constants import EMPTY_VALUE_DISPLAY
 from .models import (
-    Favorite, Ingredient, IngredientRecipe,
-    Recipe, ShoppingCart, Subscription, Tag
+    Favorite, Ingredient, Recipe,
+    RecipeIngredient, ShoppingCart, Subscription, Tag
 )
 
 User = get_user_model()
@@ -37,31 +37,28 @@ class UserAdmin(DjangoUserAdmin):
         """Отдаёт имя и фамилию пользователя."""
         return f'{user.first_name} {user.last_name}'
 
-    @admin.display(description='Число рецептов')
+    @admin.display(description='Рецептов')
     def recipes_count(self, user):
         """Отдает число рецептов пользователя."""
         return user.recipes.count()
 
-    @admin.display(description='Число подписок')
+    @admin.display(description='Подписок')
     def authors_count(self, user):
         """Отдает число подписок пользователя."""
-        return user.authors.count()
+        return user.followers.count()
 
-    @admin.display(description='Число подписчиков')
+    @admin.display(description='Подписчиков')
     def followers_count(self, user):
         """Отдает число подписчиков пользователя."""
-        return user.followers.count()
+        return user.authors.count()
 
     @admin.display(description='Аватар')
     @mark_safe
     def thumbnail(self, user):
         """Отдаёт миниатюрный аватар пользователя."""
-        if not user.avatar:
-            return EMPTY_VALUE_DISPLAY
         return (
-            '<img src="{}" width="75" height="75" />'.format(
-                user.avatar.url
-            )
+            f'<img src="{user.avatar.url}" width="75" height="75" />'
+            if user.avatar else ''
         )
 
 
@@ -86,7 +83,7 @@ class TagAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug')
     empty_value_display = EMPTY_VALUE_DISPLAY
 
-    @admin.display(description='Число рецептов')
+    @admin.display(description='Рецептов')
     def recipe_count(self, tag):
         """Отдает число рецептов с продуктом."""
         return tag.recipes.count()
@@ -105,15 +102,15 @@ class IngredientAdmin(admin.ModelAdmin):
     search_fields = ('name', 'measurement_unit')
     empty_value_display = EMPTY_VALUE_DISPLAY
 
-    @admin.display(description='Число рецептов')
+    @admin.display(description='Рецептов')
     def recipe_count(self, ingredient):
         """Отдает число рецептов с продуктом."""
         return ingredient.recipes.count()
 
 
-@admin.register(IngredientRecipe)
-class IngredientRecipeAdmin(admin.ModelAdmin):
-    """Админка модели продукт-рецептов."""
+@admin.register(RecipeIngredient)
+class RecipeIngredientAdmin(admin.ModelAdmin):
+    """Админка модели продуктов в рецепте."""
 
     list_display = ('id', 'ingredient', 'recipe', 'amount')
     search_fields = ('ingredient', 'recipe')
@@ -140,10 +137,10 @@ class ShoppingCartAdmin(FavShopCartAdminMixin):
     """Админка списков покупок."""
 
 
-class IngredientRecipeInline(admin.TabularInline):
-    """Определение встраиваемых продукт-рецептов."""
+class RecipeIngredientInline(admin.TabularInline):
+    """Определение встраиваемых продуктов в рецепте."""
 
-    model = IngredientRecipe
+    model = RecipeIngredient
 
 
 @admin.register(Recipe)
@@ -152,26 +149,47 @@ class RecipeAdmin(admin.ModelAdmin):
 
     list_display = (
         'id', 'author', 'name',
-        'image', 'cooking_time',
+        'thumbnail', 'cooking_time',
         '_tags', '_ingredients',
         'fav_count'
     )
-    inlines = (IngredientRecipeInline,)
+    inlines = (RecipeIngredientInline,)
     list_filter = ('tags',)
     search_fields = ('name', 'author')
     empty_value_display = EMPTY_VALUE_DISPLAY
 
     @admin.display(description='Теги')
+    @mark_safe
     def _tags(self, recipe):
         """Отдает перечень тегов рецепта."""
-        return ''.join([f'{tag}, ' for tag in recipe.tags.all()])
+        return '<br>'.join(
+            f'{tag}' for tag in recipe.tags.all()
+        )
 
     @admin.display(description='Продукты')
+    @mark_safe
     def _ingredients(self, recipe):
         """Отдает перечень продуктов рецепта."""
-        return ''.join([f'{ing}, ' for ing in recipe.ingredients.all()])
+        return '<br>'.join(
+            f'{ing} ({measurement_unit}) — {amount}'
+            for ing, measurement_unit, amount
+            in recipe.recipe_ingredients.values_list(
+                'ingredient__name',
+                'ingredient__measurement_unit',
+                'amount'
+            )
+        )
 
-    @admin.display(description='Добавлений в избранное')
+    @admin.display(description='Изображение')
+    @mark_safe
+    def thumbnail(self, recipe):
+        """Отдаёт миниатюрное изображение рецепта."""
+        return (
+            f'<img src="{recipe.image.url}" width="75" height="75" />'
+            if recipe.image else ''
+        )
+
+    @admin.display(description='В избранном')
     def fav_count(self, recipe):
         """Отдаёт кол-во добавлений в избранное для рецепта."""
         return recipe.favorites.count()
