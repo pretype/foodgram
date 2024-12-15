@@ -112,9 +112,18 @@ class IngredientAdmin(admin.ModelAdmin):
 class RecipeIngredientAdmin(admin.ModelAdmin):
     """Админка модели продуктов в рецепте."""
 
-    list_display = ('id', 'ingredient', 'recipe', 'amount')
+    list_display = (
+        'id', 'ingredient',
+        'recipe', '_measurement_unit',
+        'amount'
+    )
     search_fields = ('ingredient', 'recipe')
     empty_value_display = EMPTY_VALUE_DISPLAY
+
+    @admin.display(description='Ед.изм')
+    def _measurement_unit(self, recipe_ingredient):
+        """Отдаёт единицу измерения продукта."""
+        return recipe_ingredient.ingredient.measurement_unit
 
 
 class FavShopCartAdminMixin(admin.ModelAdmin):
@@ -141,6 +150,12 @@ class RecipeIngredientInline(admin.TabularInline):
     """Определение встраиваемых продуктов в рецепте."""
 
     model = RecipeIngredient
+    readonly_fields = ('_measurement_unit',)
+
+    @admin.display(description='Ед.изм')
+    def _measurement_unit(self, recipe_ingredient):
+        """Отдаёт единицу измерения продукта."""
+        return recipe_ingredient.ingredient.measurement_unit
 
 
 @admin.register(Recipe)
@@ -154,7 +169,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'fav_count'
     )
     inlines = (RecipeIngredientInline,)
-    list_filter = ('tags',)
+    list_filter = ('tags', 'author')
     search_fields = ('name', 'author')
     empty_value_display = EMPTY_VALUE_DISPLAY
 
@@ -171,13 +186,11 @@ class RecipeAdmin(admin.ModelAdmin):
     def _ingredients(self, recipe):
         """Отдает перечень продуктов рецепта."""
         return '<br>'.join(
-            f'{ing} ({measurement_unit}) — {amount}'
-            for ing, measurement_unit, amount
-            in recipe.recipe_ingredients.values_list(
-                'ingredient__name',
-                'ingredient__measurement_unit',
-                'amount'
-            )
+            '{} ({}) — {}'.format(
+                rec_ing.ingredient.name,
+                rec_ing.ingredient.measurement_unit,
+                rec_ing.amount
+            ) for rec_ing in recipe.recipe_ingredients.all()
         )
 
     @admin.display(description='Изображение')

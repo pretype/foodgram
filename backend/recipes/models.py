@@ -168,7 +168,7 @@ class Recipe(models.Model):
         validators=(
             MinValueValidator(MIN_COOKING_TIME),
         ),
-        verbose_name='Время приготовления в минутах'
+        verbose_name='Время (мин)'
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
